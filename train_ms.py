@@ -3,6 +3,7 @@ import json
 import argparse
 import itertools
 import math
+import time
 import torch
 from torch import nn, optim
 from torch.nn import functional as F
@@ -12,6 +13,7 @@ import torch.multiprocessing as mp
 import torch.distributed as dist
 from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.cuda.amp import autocast, GradScaler
+from datetime import datetime
 
 import commons
 import utils
@@ -135,7 +137,10 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, schedulers, scaler, loade
 
   net_g.train()
   net_d.train()
+  time_window = utils.ValueWindow(window_size=100)
+  total_batch_idx = 0
   for batch_idx, (x, x_lengths, spec, spec_lengths, y, y_lengths, speakers) in enumerate(train_loader):
+    start_time = time.time()
     x, x_lengths = x.cuda(rank, non_blocking=True), x_lengths.cuda(rank, non_blocking=True)
     spec, spec_lengths = spec.cuda(rank, non_blocking=True), spec_lengths.cuda(rank, non_blocking=True)
     y, y_lengths = y.cuda(rank, non_blocking=True), y_lengths.cuda(rank, non_blocking=True)
@@ -194,6 +199,15 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, schedulers, scaler, loade
     grad_norm_g = commons.clip_grad_value_(net_g.parameters(), None)
     scaler.step(optim_g)
     scaler.update()
+
+    time_window.append(time.time()-start_time)
+    format = '%Y-%m-%d %H:%M:%S.%f'
+    acc_batch_idx = total_batch_idx + batch_idx
+    if rank==0:
+      print('{:s}: global step {}, epoch {} [{:.0f}%] [{:.3f} s/step , loss_disc {}, loss_gen {}, loss_fm {},'
+            ' loss_mel {}, loss_dur {}, loss_kl {}]'.format(datetime.now().strftime(format)[:-3], global_step, epoch,
+                                                            100. * (acc_batch_idx + 1) / len(train_loader), time_window.average,
+                                                            loss_disc, loss_gen, loss_fm, loss_mel, loss_dur, loss_kl))
 
     if rank==0:
       if global_step % hps.train.log_interval == 0:
