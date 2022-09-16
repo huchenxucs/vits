@@ -20,8 +20,8 @@
         "c_kl": 1.0
     },
     "data": {
-        "training_files": "filelists/zpw_audio_text_train_filelist.txt",
-        "validation_files": "filelists/zpw_audio_text_val_filelist.txt",
+        "training_files": "filelists/zpw_audio_text_train_filelist.txt.cleaned",
+        "validation_files": "filelists/zpw_audio_text_val_filelist.txt.cleaned",
         "text_cleaners": [
             "english_cleaners2"
         ],
@@ -35,7 +35,7 @@
         "mel_fmax": null,
         "add_blank": true,
         "n_speakers": 0,
-        "cleaned_text": false
+        "cleaned_text": true
     },
     "model": {
         "inter_channels": 192,

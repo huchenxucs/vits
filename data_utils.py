@@ -25,7 +25,6 @@ class TextAudioLoader(torch.utils.data.Dataset):
         self.filter_length  = hparams.filter_length 
         self.hop_length     = hparams.hop_length 
         self.win_length     = hparams.win_length
-        self.sampling_rate  = hparams.sampling_rate 
 
         self.cleaned_text = getattr(hparams, "cleaned_text", False)
 
